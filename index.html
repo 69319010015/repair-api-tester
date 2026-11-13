@@ -159,7 +159,8 @@
    ============================================================ */
 var DEFAULT_BASE = 'https://college-repair-api.onrender.com';
 var API_PREFIX = '/api/v1';
-var STORAGE_KEY = 'repair-api-base-url';
+var STORAGE_KEY = 'repair-api-base-url-v2';
+var LEGACY_KEY = 'repair-api-base-url';
 
 var $ = function (id) { return document.getElementById(id); };
 var logEl = $('log');
@@ -227,7 +228,18 @@ function useCurrentOrigin() {
 
 function loadBase() {
   var saved = null;
-  try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) { saved = null; }
+  try {
+    saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) {
+      // ย้ายค่าจากคีย์เดิม เฉพาะเมื่อผู้ใช้ตั้งค่าเอง (ไม่ใช่ localhost ค่าเริ่มต้นเก่า)
+      var legacy = localStorage.getItem(LEGACY_KEY);
+      if (legacy && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/.*)?$/i.test(normalizeBase(legacy))) {
+        saved = legacy;
+        localStorage.setItem(STORAGE_KEY, normalizeBase(legacy));
+      }
+      localStorage.removeItem(LEGACY_KEY);
+    }
+  } catch (e) { saved = null; }
   $('baseInput').value = normalizeBase(saved || DEFAULT_BASE);
   refreshResolved();
 }
@@ -269,7 +281,8 @@ async function call(method, path, opts) {
     return { status: res.status, json: json };
   } catch (err) {
     log(method + ' ' + url, 0, Math.round(performance.now() - t0),
-        { error: String(err), hint: 'ตรวจ API Base URL, เปิด tunnel/เซิร์ฟเวอร์แล้วหรือยัง, และ CORS' });
+        { error: String(err),
+          hint: 'ถ้า base ยังเป็น http://localhost:3000 แต่คุณไม่ได้รัน API ในเครื่อง ให้กดปุ่ม “☁️ คลาวด์ (Render)” ด้านบน' });
     setPill('เชื่อมต่อไม่ได้', 'bad');
     return { status: 0, json: null };
   }
