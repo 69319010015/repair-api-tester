@@ -8,25 +8,26 @@
 
 1. เปิดหน้า **[API Test Console](https://69319010015.github.io/repair-api-tester/)**
 2. ใส่ **API Base URL** ที่ช่องบนสุด (ระบบจำค่าไว้ใน `localStorage` ของเบราว์เซอร์)
-   - ค่าเริ่มต้น `http://localhost:3000` — ไม่ต้องใส่ `/api/v1` ก็ได้ ตัวหน้าเว็บเติมให้เอง
+   - ค่าเริ่มต้น `https://college-repair-api.onrender.com` (API ตัวอย่างบนคลาวด์)
+   - ปุ่มลัด: **☁️ คลาวด์ (Render)** และ **💻 ในเครื่อง (localhost:3000)**
+   - ไม่ต้องใส่ `/api/v1` ก็ได้ ตัวหน้าเว็บเติมให้เอง และกันแสลชซ้อนให้
    - ถ้า API อยู่เครื่องอื่น เช่น `https://api.example.com` หรือ `http://192.168.1.50:8080`
 3. กด **ทดสอบเชื่อมต่อ** (ยิง `GET /api/v1/health`)
 4. กด **เข้าสู่ระบบทั้ง 2 คน** → **แจ้งซ่อม** → กดปุ่มสถานะทีละขั้น
    (`ACCEPTED → IN_PROGRESS → WAITING_PARTS → COMPLETED`) แล้วดู HTTP status + JSON ใน log ด้านขวา
 
-## รัน Back-End ในเครื่องก่อน
+## API ปลายทาง
+
+| แบบ | API Base URL | หมายเหตุ |
+|---|---|---|
+| คลาวด์ | `https://college-repair-api.onrender.com` | แผนฟรี sleeps หลังไม่มีคนใช้ 15 นาที คำขอแรกอาจช้า ~30–50 วินาที |
+| ในเครื่อง | `http://localhost:3000` | รันเองด้วย `npm start` (ดู repo หลัก) |
+
+รัน Back-End ในเครื่อง :
 
 ```bash
 git clone https://github.com/69319010015/college-repair-api.git
-cd college-repair-api
-npm install
-npm start          # http://localhost:3000
-```
-
-ถ้า Back-End รันอยู่บนเซิร์ฟเวอร์อื่น ให้ทำ SSH tunnel มาที่เครื่องตัวเอง :
-
-```bash
-ssh -N -L 3000:172.17.0.3:3000 root@<vps-ip>
+cd college-repair-api && npm install && npm start
 ```
 
 ## หมายเหตุ

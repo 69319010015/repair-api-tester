@@ -48,14 +48,14 @@
 <body>
 <header>
   <h1>API Test Console — ระบบแจ้งซ่อมคอมพิวเตอร์และอุปกรณ์ของวิทยาลัย</h1>
-  <p>ทดสอบ Back-End API จริง (ไม่ใช่ mock) · ตั้งค่า API Base URL ได้ด้านล่างและระบบจะจำไว้ในเครื่องคุณ</p>
+  <p>ทดสอบ Back-End API จริง (ไม่ใช่ mock) · ค่าเริ่มต้นชี้ไปที่ API บนคลาวด์ · เปลี่ยน API Base URL ได้ด้านล่างและระบบจำไว้ในเครื่องคุณ</p>
 </header>
 
 <div id="config">
   <div class="field">
     <label for="baseInput">API Base URL</label>
-    <input id="baseInput" type="url" spellcheck="false" placeholder="http://localhost:3000"
-           value="http://localhost:3000" autocomplete="off">
+    <input id="baseInput" type="url" spellcheck="false" placeholder="https://college-repair-api.onrender.com"
+           value="https://college-repair-api.onrender.com" autocomplete="off">
   </div>
   <div>
     <label style="visibility:hidden">actions</label>
@@ -63,6 +63,10 @@
     <button onclick="resetBase()">ค่าเริ่มต้น</button>
   </div>
   <div id="resolved">ใช้ยิงไปที่: —</div>
+  <div id="presets" style="flex:1 1 100%;display:flex;gap:6px;flex-wrap:wrap">
+    <button onclick="usePreset('https://college-repair-api.onrender.com')">☁️ คลาวด์ (Render)</button>
+    <button onclick="usePreset('http://localhost:3000')">💻 ในเครื่อง (localhost:3000)</button>
+  </div>
   <span id="statusPill">ยังไม่เชื่อมต่อ</span>
 </div>
 
@@ -145,7 +149,7 @@
     </section>
   </div>
 </main>
-<footer>หากเปิดหน้านี้ผ่าน GitHub Pages (https) เบราว์เซอร์บางตัวจะบล็อกการเรียก http — ใช้ Chrome/Firefox หรือเปิดไฟล์ในเครื่อง (file://) จะเสถียรที่สุด</footer>
+<footer>API ตัวอย่างออนไลน์: college-repair-api.onrender.com (แผนฟรีจะ sleep เมื่อไม่มีคนใช้ คำขอแรกอาจช้า ~30–50 วินาที)</footer>
 
 <script>
 'use strict';
@@ -153,7 +157,7 @@
    API Base URL — ตั้งค่าได้ + จำค่าใน localStorage
    ค่าเริ่มต้น: http://localhost:3000  (ไม่ต้องใส่ /api/v1 ก็ได้)
    ============================================================ */
-var DEFAULT_BASE = 'http://localhost:3000';
+var DEFAULT_BASE = 'https://college-repair-api.onrender.com';
 var API_PREFIX = '/api/v1';
 var STORAGE_KEY = 'repair-api-base-url';
 
@@ -192,7 +196,8 @@ function saveBase() {
 function refreshResolved() {
   $('resolved').textContent = 'ใช้ยิงไปที่: ' + apiBase();
   var isHttpsPage = location.protocol === 'https:';
-  var isHttpTarget = apiBase().indexOf('http://') === 0;
+  var target = apiBase();
+  var isHttpTarget = target.indexOf('http://') === 0 && !/^http:\/\/(localhost|127\.0\.0\.1)/i.test(target);
   var box = $('warnbox');
   if (isHttpsPage && isHttpTarget) {
     box.hidden = false;
@@ -204,6 +209,19 @@ function refreshResolved() {
 
 function resetBase() {
   $('baseInput').value = DEFAULT_BASE;
+  saveBase();
+}
+
+/** ปุ่มลัดสลับระหว่าง API บนคลาวด์กับ API ที่รันในเครื่อง */
+function usePreset(url) {
+  $('baseInput').value = url;
+  saveBase();
+  setPill('ยังไม่เชื่อมต่อ', '');
+}
+
+/** ใช้ URL ของหน้าปัจจุบันเป็น base (กรณี Pages ถูก custom domain) */
+function useCurrentOrigin() {
+  $('baseInput').value = location.origin;
   saveBase();
 }
 
