@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API Test Console — ระบบแจ้งซ่อมคอมพิวเตอร์และอุปกรณ์ของวิทยาลัย</title>
+<style>
+  :root{--ink:#111827;--muted:#6b7280;--line:#e5e7eb;--blue:#1d4ed8;--green:#15803d;--red:#b91c1c;--amber:#b45309;--bg:#f8fafc}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Sarabun","Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+  header{background:#0f172a;color:#fff;padding:14px 22px}
+  header h1{margin:0;font-size:17px;font-weight:600;line-height:1.35}
+  header p{margin:5px 0 0;font-size:12.5px;color:#94a3b8}
+  /* ---------- config bar ---------- */
+  #config{background:#1e293b;color:#e2e8f0;padding:12px 22px;display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end}
+  #config .field{flex:1 1 320px;min-width:0}
+  #config label{display:block;font-size:11.5px;letter-spacing:.03em;text-transform:uppercase;color:#94a3b8;margin-bottom:4px}
+  #config input{width:100%;padding:8px 10px;border-radius:7px;border:1px solid #334155;background:#0b1220;color:#e2e8f0;font:inherit;font-size:13.5px}
+  #config input:focus{outline:2px solid #3b82f6;outline-offset:0}
+  #config button{cursor:pointer;border:1px solid #334155;background:#0b1220;color:#e2e8f0;border-radius:7px;padding:8px 12px;font:inherit;font-size:12.5px}
+  #config button.primary{background:#2563eb;border-color:#2563eb;color:#fff}
+  #resolved{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:#7dd3fc;padding-bottom:9px;flex:1 1 320px;min-width:0;overflow-wrap:anywhere}
+  #statusPill{font-size:11.5px;padding:3px 9px;border-radius:999px;background:#334155;color:#cbd5e1;white-space:nowrap}
+  #statusPill.ok{background:#14532d;color:#bbf7d0}
+  #statusPill.bad{background:#7f1d1d;color:#fecaca}
+  main{display:grid;grid-template-columns:minmax(280px,380px) minmax(0,1fr);gap:16px;padding:16px;align-items:start}
+  section{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0;overflow-wrap:anywhere}
+  h2{font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 10px}
+  label{display:block;font-size:12.5px;color:var(--muted);margin:8px 0 3px}
+  input,select,textarea{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:7px;font:inherit;font-size:13px;background:#fff;min-width:0}
+  textarea{resize:vertical;min-height:56px}
+  button{cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:7px;padding:6px 10px;font:inherit;font-size:12.5px;margin:6px 6px 0 0;max-width:100%}
+  button:hover{border-color:#94a3b8}
+  button.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  button.ok{background:var(--green);border-color:var(--green);color:#fff}
+  button.warn{background:var(--amber);border-color:var(--amber);color:#fff}
+  button.ghost{background:#f1f5f9}
+  .row{display:flex;gap:8px}.row>div{flex:1;min-width:0}
+  .pill{display:inline-block;font-size:11.5px;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;margin-left:4px;overflow-wrap:anywhere}
+  #log{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;background:#0b1220;color:#cbd5e1;border-radius:8px;padding:12px;height:56vh;overflow:auto;white-space:pre-wrap;line-height:1.45}
+  .s2{color:#4ade80}.s4{color:#f87171}.s5{color:#f87171}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  .warnbox{margin:0 16px;padding:9px 12px;border-radius:8px;background:#fef3c7;color:#7c2d12;font-size:12.5px;border:1px solid #fcd34d}
+  footer{padding:10px 22px 22px;font-size:11.5px;color:#94a3b8}
+  @media(max-width:820px){main{grid-template-columns:1fr}#log{height:44vh}}
+</style>
+</head>
+<body>
+<header>
+  <h1>API Test Console — ระบบแจ้งซ่อมคอมพิวเตอร์และอุปกรณ์ของวิทยาลัย</h1>
+  <p>ทดสอบ Back-End API จริง (ไม่ใช่ mock) · ตั้งค่า API Base URL ได้ด้านล่างและระบบจะจำไว้ในเครื่องคุณ</p>
+</header>
+
+<div id="config">
+  <div class="field">
+    <label for="baseInput">API Base URL</label>
+    <input id="baseInput" type="url" spellcheck="false" placeholder="http://localhost:3000"
+           value="http://localhost:3000" autocomplete="off">
+  </div>
+  <div>
+    <label style="visibility:hidden">actions</label>
+    <button class="primary" onclick="checkConnection()">ทดสอบเชื่อมต่อ</button>
+    <button onclick="resetBase()">ค่าเริ่มต้น</button>
+  </div>
+  <div id="resolved">ใช้ยิงไปที่: —</div>
+  <span id="statusPill">ยังไม่เชื่อมต่อ</span>
+</div>
+
+<div id="warnbox" class="warnbox" hidden></div>
+
+<main>
+  <div>
+    <section>
+      <h2>1 · เข้าสู่ระบบ</h2>
+      <div class="row">
+        <div><label>รหัสผู้ใช้ (studentId)</label><input id="sid" value="S001"></div>
+        <div><label>บทบาท</label>
+          <select id="role">
+            <option value="STUDENT">STUDENT (ผู้แจ้ง)</option>
+            <option value="TECHNICIAN">TECHNICIAN (ช่าง)</option>
+            <option value="ADMIN">ADMIN (หัวหน้างาน)</option>
+          </select>
+        </div>
+      </div>
+      <label>ชื่อ-สกุล</label><input id="fname" value="สมชาย ใจดี">
+      <button class="primary" onclick="login()">เข้าสู่ระบบ</button>
+      <button class="ghost" onclick="loginBoth()">เข้าสู่ระบบทั้ง 2 คน</button>
+      <div class="hint">token ผู้แจ้ง: <span id="tokS" class="pill">ยังไม่มี</span></div>
+      <div class="hint">token ช่าง: <span id="tokT" class="pill">ยังไม่มี</span></div>
+      <button class="ghost" onclick="health()">GET /health</button>
+      <button class="ghost" onclick="rootInfo()">GET /</button>
+    </section>
+
+    <section style="margin-top:16px">
+      <h2>2 · แจ้งซ่อม (POST /tickets)</h2>
+      <label>หัวข้อ (≥5 ตัวอักษร)</label><input id="t_title" value="คอมพิวเตอร์เปิดไม่ติด">
+      <label>รายละเอียด (≥10 ตัวอักษร)</label><textarea id="t_desc">กดปุ่มเปิดแล้วไม่มีไฟเข้า หน้าจอดำสนิท</textarea>
+      <div class="row">
+        <div><label>หมวด</label>
+          <select id="t_cat"><option>COMPUTER</option><option>PRINTER</option><option>NETWORK</option><option>PROJECTOR</option><option>OTHER</option></select>
+        </div>
+        <div><label>ความเร่งด่วน</label>
+          <select id="t_pri"><option>LOW</option><option selected>NORMAL</option><option>HIGH</option></select>
+        </div>
+      </div>
+      <label>deviceId (ไม่บังคับ)</label><input id="t_dev" placeholder="เว้นว่างได้">
+      <button class="primary" onclick="createTicket()">แจ้งซ่อม</button>
+      <div class="hint">ใบงานล่าสุด: <span id="lastTicket" class="pill">—</span></div>
+    </section>
+  </div>
+
+  <div>
+    <section>
+      <h2>3 · เปลี่ยนสถานะ (PATCH /tickets/:id/status)</h2>
+      <div class="row">
+        <div><label>รหัสใบงาน (id)</label><input id="tid" placeholder="กด “แจ้งซ่อม” ก่อน"></div>
+        <div><label>หมายเหตุ</label><input id="note" placeholder="เช่น รอฮาร์ดดิสก์จากคลัง"></div>
+      </div>
+      <button class="ok" onclick="patchStatus('ACCEPTED')">ACCEPTED · ช่างรับเรื่อง</button>
+      <button class="ok" onclick="patchStatus('IN_PROGRESS')">IN_PROGRESS · กำลังซ่อม</button>
+      <button class="warn" onclick="patchStatus('WAITING_PARTS')">WAITING_PARTS · รออะไหล่</button>
+      <button class="ok" onclick="patchStatus('COMPLETED')">COMPLETED · ซ่อมเสร็จ</button>
+      <button class="ghost" onclick="patchStatus('CLOSED')">CLOSED · ปิดงาน (ADMIN)</button>
+      <button class="ghost" onclick="patchStatus('REJECTED')">REJECTED · ซ่อมไม่ได้</button>
+      <button class="ghost" onclick="patchStatus('CANCELED')">CANCELED · ยกเลิก (ผู้แจ้ง)</button>
+      <div class="hint">ปุ่มสถานะใช้ token ช่างเทคนิค ยกเว้น CANCELED ที่ใช้ token ผู้แจ้ง</div>
+    </section>
+
+    <section style="margin-top:16px">
+      <h2>4 · ดูรายการ + ผลลัพธ์</h2>
+      <div class="row">
+        <div><label>กรองสถานะ</label>
+          <select id="f_status">
+            <option value="">— ทั้งหมด —</option>
+            <option>PENDING</option><option>ACCEPTED</option><option>IN_PROGRESS</option>
+            <option>WAITING_PARTS</option><option>COMPLETED</option><option>CLOSED</option>
+            <option>REJECTED</option><option>CANCELED</option>
+          </select>
+        </div>
+        <div><label>คำค้น (q)</label><input id="f_q" placeholder="ไม่บังคับ"></div>
+      </div>
+      <button class="primary" onclick="listTickets()">GET /tickets</button>
+      <button class="ghost" onclick="clearLog()">ล้าง log</button>
+      <div id="log" style="margin-top:12px"></div>
+    </section>
+  </div>
+</main>
+<footer>หากเปิดหน้านี้ผ่าน GitHub Pages (https) เบราว์เซอร์บางตัวจะบล็อกการเรียก http — ใช้ Chrome/Firefox หรือเปิดไฟล์ในเครื่อง (file://) จะเสถียรที่สุด</footer>
+
+<script>
+'use strict';
+/* ============================================================
+   API Base URL — ตั้งค่าได้ + จำค่าใน localStorage
+   ค่าเริ่มต้น: http://localhost:3000  (ไม่ต้องใส่ /api/v1 ก็ได้)
+   ============================================================ */
+var DEFAULT_BASE = 'http://localhost:3000';
+var API_PREFIX = '/api/v1';
+var STORAGE_KEY = 'repair-api-base-url';
+
+var $ = function (id) { return document.getElementById(id); };
+var logEl = $('log');
+var state = { tokenS: null, tokenT: null };
+
+/** ตัดช่องว่าง/แสลชท้าย และเติม scheme ให้ถ้าลืมใส่ */
+function normalizeBase(raw) {
+  var v = String(raw == null ? '' : raw).trim();
+  if (!v) v = DEFAULT_BASE;
+  if (!/^https?:\/\//i.test(v)) v = 'http://' + v.replace(/^\/+/, '');
+  return v.replace(/\/+$/, '');          // ห้ามลงท้ายด้วย / (กัน // ซ้อน)
+}
+
+/** base ที่พร้อมต่อ path: เติม /api/v1 ให้ครั้งเดียว ไม่ซ้ำ */
+function apiBase() {
+  var b = normalizeBase($('baseInput').value);
+  return new RegExp(API_PREFIX.replace('/', '\\/') + '$', 'i').test(b) ? b : b + API_PREFIX;
+}
+
+/** ต่อ path เข้ากับ base อย่างปลอดภัย: ไม่มี // เกิน และมี / ข้างหน้าพอดีหนึ่งตัว */
+function endpoint(path) {
+  var p = String(path == null ? '' : path).trim();
+  if (!p) return apiBase();
+  if (!p.startsWith('/')) p = '/' + p;
+  return apiBase().replace(/\/+$/, '') + p.replace(/^\/+/, '/');
+}
+
+function saveBase() {
+  var v = normalizeBase($('baseInput').value);
+  try { localStorage.setItem(STORAGE_KEY, v); } catch (e) { /* โหมดส่วนตัวอาจเขียนไม่ได้ */ }
+  refreshResolved();
+}
+
+function refreshResolved() {
+  $('resolved').textContent = 'ใช้ยิงไปที่: ' + apiBase();
+  var isHttpsPage = location.protocol === 'https:';
+  var isHttpTarget = apiBase().indexOf('http://') === 0;
+  var box = $('warnbox');
+  if (isHttpsPage && isHttpTarget) {
+    box.hidden = false;
+    box.textContent = 'หน้านี้เปิดผ่าน https แต่ API เป็น http — ถ้าเบราว์เซอร์บล็อก (mixed content) ให้เปิดไฟล์ในเครื่องหรือใช้ Chrome/Firefox';
+  } else {
+    box.hidden = true;
+  }
+}
+
+function resetBase() {
+  $('baseInput').value = DEFAULT_BASE;
+  saveBase();
+}
+
+function loadBase() {
+  var saved = null;
+  try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) { saved = null; }
+  $('baseInput').value = normalizeBase(saved || DEFAULT_BASE);
+  refreshResolved();
+}
+
+/* ============================================================ helpers */
+function setPill(text, kind) {
+  var el = $('statusPill');
+  el.textContent = text;
+  el.className = kind || '';
+}
+
+function log(title, status, ms, body) {
+  var cls = status === 0 || status >= 500 ? 's5' : status >= 400 ? 's4' : 's2';
+  var line = '[' + new Date().toLocaleTimeString('th-TH') + '] ' +
+             '<span class="' + cls + '">' + status + '</span> ' + title +
+             ' (' + ms + ' ms)\n' + JSON.stringify(body, null, 2) + '\n\n';
+  logEl.innerHTML = line + logEl.innerHTML;
+}
+function clearLog() { logEl.innerHTML = ''; }
+
+async function call(method, path, opts) {
+  opts = opts || {};
+  var url = endpoint(path);
+  var t0 = performance.now();
+  var headers = {};
+  if (opts.body) headers['Content-Type'] = 'application/json';
+  if (opts.token) headers['Authorization'] = 'Bearer ' + opts.token;
+  try {
+    var res = await fetch(url, {
+      method: method,
+      headers: headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    });
+    var json;
+    try { json = await res.json(); } catch (e) { json = { note: 'response ไม่ใช่ JSON' }; }
+    log(method + ' ' + url, res.status, Math.round(performance.now() - t0), json);
+    if (res.ok) setPill('เชื่อมต่อได้ · ' + res.status, 'ok');
+    else setPill('ตอบกลับ ' + res.status, 'bad');
+    return { status: res.status, json: json };
+  } catch (err) {
+    log(method + ' ' + url, 0, Math.round(performance.now() - t0),
+        { error: String(err), hint: 'ตรวจ API Base URL, เปิด tunnel/เซิร์ฟเวอร์แล้วหรือยัง, และ CORS' });
+    setPill('เชื่อมต่อไม่ได้', 'bad');
+    return { status: 0, json: null };
+  }
+}
+
+/* ============================================================ actions */
+async function checkConnection() { await call('GET', '/health'); }
+async function health() { await call('GET', '/health'); }
+
+async function rootInfo() {
+  var url = normalizeBase($('baseInput').value).replace('/api/v1', '') + '/';
+  var t0 = performance.now();
+  try {
+    var res = await fetch(url);
+    var json = await res.json();
+    log('GET ' + url, res.status, Math.round(performance.now() - t0), json);
+    setPill('เชื่อมต่อได้ · ' + res.status, 'ok');
+  } catch (err) {
+    log('GET ' + url, 0, Math.round(performance.now() - t0), { error: String(err) });
+    setPill('เชื่อมต่อไม่ได้', 'bad');
+  }
+}
+
+async function doLogin(sid, fname, role) {
+  var r = await call('POST', '/auth/login', { body: { studentId: sid, fullName: fname, role: role } });
+  return r.json && r.json.data ? r.json.data.token : null;
+}
+
+async function login() {
+  var role = $('role').value;
+  var token = await doLogin($('sid').value, $('fname').value, role);
+  if (!token) return;
+  if (role === 'STUDENT') { state.tokenS = token; $('tokS').textContent = token.slice(0, 14) + '…'; }
+  else { state.tokenT = token; $('tokT').textContent = role + ' · ' + token.slice(0, 10) + '…'; }
+}
+
+async function loginBoth() {
+  state.tokenS = await doLogin('S001', 'สมชาย ใจดี', 'STUDENT');
+  if (state.tokenS) $('tokS').textContent = state.tokenS.slice(0, 14) + '…';
+  state.tokenT = await doLogin('T100', 'ช่างสมศักดิ์', 'TECHNICIAN');
+  if (state.tokenT) $('tokT').textContent = state.tokenT.slice(0, 14) + '…';
+}
+
+async function createTicket() {
+  if (!state.tokenS) await loginBoth();
+  var body = {
+    title: $('t_title').value,
+    description: $('t_desc').value,
+    category: $('t_cat').value,
+    priority: $('t_pri').value
+  };
+  var dev = $('t_dev').value.trim();
+  if (dev) body.deviceId = dev;
+  var r = await call('POST', '/tickets', { token: state.tokenS, body: body });
+  if (r.json && r.json.data) {
+    $('tid').value = r.json.data.id;
+    $('lastTicket').textContent = r.json.data.ticketNo + ' · ' + (r.json.data.statusLabel || r.json.data.status);
+  }
+}
+
+async function patchStatus(status) {
+  var id = $('tid').value.trim();
+  if (!id) { log('PATCH /tickets/:id/status', 0, 0, { hint: 'ยังไม่มีรหัสใบงาน — กด “แจ้งซ่อม” ก่อน' }); return; }
+  var token = status === 'CANCELED' ? state.tokenS : state.tokenT;
+  if (!token) { await loginBoth(); token = status === 'CANCELED' ? state.tokenS : state.tokenT; }
+  var body = { status: status };
+  var note = $('note').value.trim();
+  if (note) body.note = note;
+  await call('PATCH', '/tickets/' + encodeURIComponent(id) + '/status', { token: token, body: body });
+}
+
+async function listTickets() {
+  if (!state.tokenT && !state.tokenS) await loginBoth();
+  var params = new URLSearchParams({ page: '1', limit: '20' });
+  if ($('f_status').value) params.set('status', $('f_status').value);
+  var q = $('f_q').value.trim();
+  if (q) params.set('q', q);
+  await call('GET', '/tickets?' + params.toString(), { token: state.tokenT || state.tokenS });
+}
+
+/* ============================================================ boot */
+(function boot() {
+  loadBase();
+  $('baseInput').addEventListener('input', function () { $('resolved').textContent = 'ใช้ยิงไปที่: ' + apiBase(); });
+  $('baseInput').addEventListener('change', saveBase);
+  $('baseInput').addEventListener('blur', saveBase);
+  logEl.innerHTML = 'พร้อมใช้งาน — ตั้ง API Base URL ด้านบน แล้วกด “ทดสอบเชื่อมต่อ”\n';
+})();
+</script>
+</body>
+</html>
